@@ -1,8 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const _ = require('underscore');
-const worker = require('../workers/htmlfetcher');
-
+const http = require('http');
 
 /*
  * You will need to reuse the same paths many times over in the course of this sprint.
@@ -56,5 +55,16 @@ exports.isUrlArchived = function(url, callback) {
 };
 
 exports.downloadUrls = function(urls) {
-  urls.forEach(url => worker.htmlfetcher(url));
+  urls.forEach(url => {
+    let html = '';
+    let options = { hostname: url, pathname: '/', port: 80 };
+    http.get(options, res => {
+      res.on('data', chunk => {
+        html += chunk;
+      });
+      res.on('end', () => {
+        fs.writeFile(`${exports.paths.archivedSites}/${url}`, html);
+      });
+    }).on('error', (err) => { return; });
+  });
 };
