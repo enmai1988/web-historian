@@ -7,49 +7,46 @@ var worker = require('../workers/htmlfetcher');
 // require more modules/folders here!
 
 exports.handleRequest = function (req, res) {
-  let serverUrl = './web/public/index.html';
-
-  // function to get html info from computer file
-  let getAsset = (res, asset) => {
-    fs.readFile(asset, 'utf8', (err, data) => {
-      if (err) { throw err; }
-      res.writeHead(200, helpers.headers);
-      res.end(data);
-    });
-  };
-
   if (req.method === 'GET') {
-    helpers.serveAssets(res, serverUrl, getAsset);
-  } else if (req.method === 'POST') {
+    helpers.serveAssets(res, `${archive.paths.siteAssets}/index.html`);
+  } else if (req.method === 'POST') {    
     let url = '';
     req.on('data', data => {
       url += data;
     });
     req.on('end', () => {
+      url = url.substring(4);
+      let filePath = `${archive.paths.archivedSites}/${url}.txt`;
+      let loadingHtml = `${archive.paths.siteAssets}/loading.html`;
+
+      archive.readListOfUrls();
+
+
       // Read list of urls in  archives sites.txt
-      let list = helpers.readListOfUrls();
-      // if url is in the list
-      if (_.contains(list, url)) {
-        fs.access(path, (err) => {
-          // if url is archived, send it to the client
-          if (!err) {
-            helpers.serveAssets(res, filePath, getAsset);
-          } else {
-            // else, archived the url and send the loading html to client
-            archive.downloadUrls(url);
-            helpers.serveAssets(res, loadingHtml, getAsset);
-          }
-        });
-      } else {
-        // if url is not in the list
-        // add url to list
-        archive.addUrlToList(url, callback);
-        // download the url to the archives/sites folder
-        archive.downloadUrls(url);
-        // send the loading html to client
-        helpers.serveAssets(res, loadingHtml, getAsset);
-      }
+    //   let list = helpers.readListOfUrls();
+    //   // if url is in the list
+    //   if (_.contains(list, url)) {
+    //     fs.access(filePath, fs.constants.F_OK, (err) => {
+    //       // if url is archived, send it to the client
+    //       if (!err) {
+    //         helpers.serveAssets(res, filePath);
+    //       } else {
+    //         // else, archived the url
+    //         archive.downloadUrls(url);
+    //         // send the loading html to client
+    //         helpers.serveAssets(res, loadingHtml);
+    //       }
+    //     });
+    //   } else {
+    //     // if url is not in the list, add url to list
+    //     archive.addUrlToList(url, callback);
+    //     // download the url to the archives/sites folder
+    //     archive.downloadUrls(url);
+    //     // send the loading html to client
+    //     helpers.serveAssets(res, loadingHtml);
+    //   }
     });
   }
+  
   // res.end(archive.paths.list);
 };
