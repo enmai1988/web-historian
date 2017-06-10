@@ -1,7 +1,8 @@
-var fs = require('fs');
-var path = require('path');
-var _ = require('underscore');
-var http = require('http');
+const fs = require('fs');
+const path = require('path');
+const _ = require('underscore');
+const worker = require('../workers/htmlfetcher');
+
 
 /*
  * You will need to reuse the same paths many times over in the course of this sprint.
@@ -27,52 +28,33 @@ exports.initialize = function(pathsObj) {
 // modularize your code. Keep it clean!
 
 exports.readListOfUrls = function(callback) {
-  fs.readFile(exports.paths.list, (err, data) => {
-    callback(JSON.parse(data));
+  fs.readFile(exports.paths.list, 'utf8', (err, data) => {
+    let list = data.split('\n');
+    callback(list);
   });
 };
 
 exports.isUrlInList = function(url, callback) {
-  var targetUrl;
-  
-
+  exports.readListOfUrls(list => {
+    callback(_.contains(list, url));
+  });
 };
 
 exports.addUrlToList = function(url, callback) {
-  fs.appendFile(exports.paths.list, url, 'utf8', callback);
+  fs.appendFile(exports.paths.list, `${url}\n`, 'utf8', callback);
 };
 
 exports.isUrlArchived = function(url, callback) {
+  let filePath = `${exports.paths.archivedSites}/${url}`;
+  fs.access(filePath, (err) => {
+    if (err === null) {
+      callback(true);
+    } else {
+      callback(false);
+    }
+  });
 };
 
 exports.downloadUrls = function(urls) {
-  let index = '';
-  let options = {
-    hostname: urls
-  };
-  http.get(options, res => {
-    res.setEncoding('utf8');
-    res.on('data', chunk => {
-      index += chunk;
-      // console.log('Fetching ' + urls);
-      // console.log(index);
-    });
-    res.on('end', () => {
-      let file = `${exports.paths.archivedSites}/${urls}.html`;
-      fs.access(file, fs.constants.F_OK, (err) => {
-        if (!err) {
-          fs.writeFile(file, index, 'utf8', (err) => {
-            console.log('Error writing file 1');
-          });
-        } else {
-          fs.open(file, 'a+', () => {
-            console.log('Created ' + urls + '.html');
-            fs.appendFile(file, index, (err) => {
-              console.log('Error writing file 2'); //need to fix this
-            });
-          });
-        }
-      });
-    });
-  });
+  urls.forEach(url => worker.htmlfetcher(url));
 };

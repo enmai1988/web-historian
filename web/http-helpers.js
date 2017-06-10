@@ -23,10 +23,13 @@ exports.serveAssets = function(res, asset, callback) {
   // css, or anything that doesn't change often.)
   fs.readFile(asset, 'utf8', (err, data) => {
     if (err) { throw err; }
-    res.writeHead(200, exports.headers);
-    res.end(data);
+    callback(res, statusCode, data);
   });
 };
 
 
 // As you progress, keep thinking about what helper functions you can put here!
+let writeRes = (res, statusCode, data) => {
+  res.writeHead(statusCode, exports.headers);
+  res.end(data);
+};
